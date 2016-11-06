@@ -119,7 +119,7 @@ static void app(void)
                     }
                     else
                     {
-                        printf("%s : %s\n", client.name+"test1", buffer);
+                        printf("Superchat %s : %s\n", client.name, buffer);
                         send_message_to_all_clients(clients, client, actual, buffer, 0);
                     }
                     break;
