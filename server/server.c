@@ -2,9 +2,48 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 
 #include "server.h"
 #include "client.h"
+
+
+char** str_split(char* a_str, const char a_delim)
+{
+    char** result    = 0;
+    size_t count     = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+    
+    while (*tmp) {
+        if (a_delim == *tmp) {
+            count++;
+            last_comma = tmp;
+        }
+        tmp++;
+    }
+    count += last_comma < (a_str + strlen(a_str) - 1);
+    count++;
+    result = malloc(sizeof(char*) * count);
+    
+    if (result) {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+        while (token) {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+    
+    return result;
+}
+
 
 static void init(void)
 {
@@ -19,15 +58,45 @@ static void init(void)
 #endif
 }
 
-static void end(void)
-{
+void remove_client_with_name(Client *clients, char *name, int *actual) {
+    for (int i = 0; i < *actual; i++) {
+        if (strcmp(clients[i].name, name) == 0) {
+            closesocket(clients[i].sock);
+            remove_client(clients, i, actual);
+            printf("Client %s \e[0;32mremoved\e[0m.", name);
+            fflush(stdout);
+            return;
+        }
+    }
+    printf("Client %s \e[1;31mnot found\e[0m.", name);
+    fflush(stdout);
+}
+
+int command(Client *clients, char *buffer, int *actual) {
+    if (strcmp(buffer, "") == 0)
+        return 1;
+    char** tokens = str_split(buffer, ' ');
+    if (strcmp(tokens[0],"close") == 0) {
+        return 0;
+    } else if (strcmp(tokens[0],"rm") == 0) {
+        if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
+            printf("\e[1;31mMissing name parameter !\e[0m\n");
+            fflush(stdout);
+        } else
+            remove_client_with_name(clients, tokens[1], actual);
+    }
+    buffer = NULL;
+    return 1;
+}
+
+static void end(void) {
 #ifdef WIN32
     WSACleanup();
 #endif
 }
 
-static void app(void)
-{
+static void app(void) {
+    int state = 1;
     SOCKET sock = init_connection();
     char buffer[BUF_SIZE];
     /* the index for the array */
@@ -39,7 +108,7 @@ static void app(void)
     fd_set rdfs;
     
     printf("Server \e[0;32mstarted\e[0m.\n");
-    while(1)
+    while(state)
     {
         int i = 0;
         FD_ZERO(&rdfs);
@@ -65,8 +134,16 @@ static void app(void)
         /* something from standard input : i.e keyboard */
         if(FD_ISSET(STDIN_FILENO, &rdfs))
         {
-            /* stop process when type on keyboard */
-            break;
+            fgets(buffer, BUF_SIZE - 1, stdin);
+            {
+                char *p = NULL;
+                p = strstr(buffer, "\n");
+                if(p != NULL)
+                    *p = 0;
+                else
+                    buffer[BUF_SIZE - 1] = 0;
+            }
+            state = command(clients, buffer, &actual);
         }
         else if(FD_ISSET(sock, &rdfs))
         {
