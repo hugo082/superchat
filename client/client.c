@@ -95,7 +95,7 @@ static void app(const char *address, const char *name)
 
 static int init_connection(const char *address)
 {
-    printf("Connecting...\n");
+    printf("Connecting on %s\n",address);
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
     SOCKADDR_IN sin = { 0 };
     struct hostent *hostinfo;
@@ -165,6 +165,6 @@ int main(int argc, char **argv)
     app(argv[1], argv[2]);
     
     end();
-    printf("\e[0;36mGood bye.\n\e[0m");
+    printf("\e[0;36mGood bye %s.\n\e[0m",argv[2]);
     return EXIT_SUCCESS;
 }
