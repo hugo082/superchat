@@ -72,12 +72,25 @@ void remove_client_with_name(Client *clients, char *name, int *actual) {
     fflush(stdout);
 }
 
+void ls_client(Client *clients, int *actual) {
+    printf("+------ START\n");
+    for (int i = 0; i < *actual; i++) {
+        printf("| %s\n", clients[i].name);
+    }
+    if (*actual < 1)
+        printf("| \e[1;33mEmpty\e[0m\n");
+    printf("+------ END\n");
+    fflush(stdout);
+}
+
 int command(Client *clients, char *buffer, int *actual) {
     if (strcmp(buffer, "") == 0)
         return 1;
     char** tokens = str_split(buffer, ' ');
     if (strcmp(tokens[0],"close") == 0) {
         return 0;
+    } else if (strcmp(tokens[0],"ls") == 0) {
+        ls_client(clients, actual);
     } else if (strcmp(tokens[0],"rm") == 0) {
         if (tokens[1] == NULL || strcmp(tokens[1], "") == 0) {
             printf("\e[1;31mMissing name parameter !\e[0m\n");
@@ -149,7 +162,7 @@ static void app(void) {
         {
             /* new client */
             SOCKADDR_IN csin = { 0 };
-            size_t sinsize = sizeof csin;
+            socklen_t sinsize = sizeof csin;
             int csock = accept(sock, (SOCKADDR *)&csin, &sinsize);
             if(csock == SOCKET_ERROR)
             {
@@ -217,7 +230,7 @@ static void clear_clients(Client *clients, int actual)
     {
         closesocket(clients[i].sock);
     }
-    printf("\e[1;33mAll client have been removed.\e[0m\n");
+    printf("\e[1;33mAll client have been removed.\n\e[0m\n");
 }
 
 static void remove_client(Client *clients, int to_remove, int *actual) {
