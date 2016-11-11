@@ -38,7 +38,7 @@ static void app(void)
     
     fd_set rdfs;
     
-    printf("Server started.\n");
+    printf("Server \e[0;32mstarted\e[0m.\n");
     while(1)
     {
         int i = 0;
@@ -116,6 +116,7 @@ static void app(void)
                         strncpy(buffer, client.name, BUF_SIZE - 1);
                         strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
                         send_message_to_all_clients(clients, client, actual, buffer, 1);
+                        printf("Client %s \e[1;33mdisconnected\e[0m !\n", client.name);
                     }
                     else
                     {
@@ -139,7 +140,7 @@ static void clear_clients(Client *clients, int actual)
     {
         closesocket(clients[i].sock);
     }
-    printf("All client have been removed.\n");
+    printf("\e[1;33mAll client have been removed.\e[0m\n");
 }
 
 static void remove_client(Client *clients, int to_remove, int *actual) {
@@ -149,7 +150,7 @@ static void remove_client(Client *clients, int to_remove, int *actual) {
 
 static void send_message_to_all_clients(Client *clients, Client sender, int actual, const char *buffer, char from_server) {
     int i = 0;
-    char message[BUF_SIZE];
+    char message[BUF_SIZE + 10];
     message[0] = 0;
     for(i = 0; i < actual; i++)
     {
@@ -158,8 +159,9 @@ static void send_message_to_all_clients(Client *clients, Client sender, int actu
         {
             if(from_server == 0)
             {
-                strncpy(message, sender.name, BUF_SIZE - 1);
-                strncat(message, " : ", sizeof message - strlen(message) - 1);
+                strncpy(message, "\e[0;35m", 10);
+                strncat(message, sender.name, BUF_SIZE - 1);
+                strncat(message, "\e[0m : ", sizeof message - strlen(message) - 1);
             }
             strncat(message, buffer, sizeof message - strlen(message) - 1);
             write_client(clients[i].sock, message);
@@ -194,14 +196,14 @@ static int init_connection(void) {
         perror("listen()");
         exit(errno);
     }
-    printf("Server created.\n");
+    printf("Server \e[0;32mcreated\e[0m.\n");
     
     return sock;
 }
 
 static void end_connection(int sock) {
     closesocket(sock);
-    printf("Server closed.\n");
+    printf("Server \e[0;32mclosed\e[0m.\n");
 }
 
 static int read_client(SOCKET sock, char *buffer) {
